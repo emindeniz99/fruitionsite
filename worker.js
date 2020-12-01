@@ -1,44 +1,82 @@
 /* CONFIGURATION STARTS HERE */
 
-/* Step 1: enter your domain name like fruitionsite.com */
-const MY_DOMAIN = "fruitionsite.com";
+/* Step 0: for each website you can add an field to this object */
+const sites = {
+  /* Step 1: enter your domain name like fruitionsite.com */
+  "emindeniz99.com": {
+    /* Step 2: enter your URL slug to page ID mapping
+     * The key on the left is the slug (without the slash)
+     * The value on the right is the Notion page ID
+     */
+    SLUG_TO_PAGE: {
+      "": "9fb21200171842beb93e8505d5f15e56",
+    },
+    /* Step 3: enter your page title and description for SEO purposes */
 
-/*
- * Step 2: enter your URL slug to page ID mapping
- * The key on the left is the slug (without the slash)
- * The value on the right is the Notion page ID
- */
-const SLUG_TO_PAGE = {
-  "": "771ef38657244c27b9389734a9cbff44",
-  thanks: "9d9864f5338b47b0a7f42e0f0e2bbf46",
-  showcase: "92053970e5084019ac096d2df7e7f440",
-  roadmap: "7d4b21bfb4534364972e8bf9f68c2c36"
+    PAGE_TITLE: "Emin Deniz",
+    PAGE_DESCRIPTION:
+      "Undergraduate Computer Engineering Student at Boğaziçi University",
+
+    /* Step 4: enter a Google Font name, you can choose from https://fonts.google.com */
+    GOOGLE_FONT: "",
+
+    /* Step 5: enter any custom scripts you'd like */
+    CUSTOM_SCRIPT: ``,
+
+    /* Step 6: enter your notion.so Space Name */
+    MY_SPACENAME: "Emin",
+  },
+  "integral.events": {
+    SLUG_TO_PAGE: {
+      "": "5f160fa3750f4f5fb7409f55ea07ad05",
+    },
+    PAGE_TITLE: "Integral.Events",
+    PAGE_DESCRIPTION: "Integral Event Solutions",
+    GOOGLE_FONT: "",
+    CUSTOM_SCRIPT: ``,
+    MY_SPACENAME: "Emin",
+  },
 };
-
-/* Step 3: enter your page title and description for SEO purposes */
-const PAGE_TITLE = "Fruition";
-const PAGE_DESCRIPTION =
-  "Free, Open Source Toolkit For Customizing Your Notion Page";
-
-/* Step 4: enter a Google Font name, you can choose from https://fonts.google.com */
-const GOOGLE_FONT = "Rubik";
-
-/* Step 5: enter any custom scripts you'd like */
-const CUSTOM_SCRIPT = ``;
 
 /* CONFIGURATION ENDS HERE */
 
-const PAGE_TO_SLUG = {};
-const slugs = [];
-const pages = [];
-Object.keys(SLUG_TO_PAGE).forEach(slug => {
-  const page = SLUG_TO_PAGE[slug];
-  slugs.push(slug);
-  pages.push(page);
-  PAGE_TO_SLUG[page] = slug;
-});
+let MY_DOMAIN = "";
 
-addEventListener("fetch", event => {
+let SLUG_TO_PAGE = {
+  "": "",
+};
+
+let PAGE_TITLE = "";
+let PAGE_DESCRIPTION = "";
+
+let GOOGLE_FONT = "";
+
+let CUSTOM_SCRIPT = ``;
+
+let MY_SPACENAME = "";
+
+let PAGE_TO_SLUG = {};
+let slugs = [];
+let pages = [];
+
+function updateConstants(hostname) {
+  let currentSiteConstants = sites[hostname];
+  MY_DOMAIN = hostname;
+  SLUG_TO_PAGE = currentSiteConstants.SLUG_TO_PAGE;
+  PAGE_TITLE = currentSiteConstants.PAGE_TITLE;
+  PAGE_DESCRIPTION = currentSiteConstants.PAGE_DESCRIPTION;
+  GOOGLE_FONT = currentSiteConstants.GOOGLE_FONT;
+  CUSTOM_SCRIPT = currentSiteConstants.CUSTOM_SCRIPT;
+  Object.keys(SLUG_TO_PAGE).forEach((slug) => {
+    const page = SLUG_TO_PAGE[slug];
+    slugs.push(slug);
+    pages.push(page);
+    PAGE_TO_SLUG[page] = slug;
+  });
+  MY_SPACENAME = currentSiteConstants.MY_SPACENAME;
+}
+
+addEventListener("fetch", (event) => {
   event.respondWith(fetchAndApply(event.request));
 });
 
@@ -56,7 +94,7 @@ function generateSitemap() {
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, HEAD, POST, PUT, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type"
+  "Access-Control-Allow-Headers": "Content-Type",
 };
 
 function handleOptions(request) {
@@ -67,14 +105,14 @@ function handleOptions(request) {
   ) {
     // Handle CORS pre-flight request.
     return new Response(null, {
-      headers: corsHeaders
+      headers: corsHeaders,
     });
   } else {
     // Handle standard OPTIONS request.
     return new Response(null, {
       headers: {
-        Allow: "GET, HEAD, POST, PUT, OPTIONS"
-      }
+        Allow: "GET, HEAD, POST, PUT, OPTIONS",
+      },
     });
   }
 }
@@ -84,7 +122,10 @@ async function fetchAndApply(request) {
     return handleOptions(request);
   }
   let url = new URL(request.url);
-  url.hostname = 'www.notion.so';
+
+  updateConstants(url.hostname);
+
+  url.hostname = "www.notion.so";
   if (url.pathname === "/robots.txt") {
     return new Response("Sitemap: https://" + MY_DOMAIN + "/sitemap.xml");
   }
@@ -112,22 +153,53 @@ async function fetchAndApply(request) {
       headers: {
         "content-type": "application/json;charset=UTF-8",
         "user-agent":
-          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.163 Safari/537.36"
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.163 Safari/537.36",
       },
-      method: "POST"
+      method: "POST",
     });
     response = new Response(response.body, response);
     response.headers.set("Access-Control-Allow-Origin", "*");
     return response;
   } else if (slugs.indexOf(url.pathname.slice(1)) > -1) {
     const pageId = SLUG_TO_PAGE[url.pathname.slice(1)];
-    return Response.redirect("https://" + MY_DOMAIN + "/" + pageId, 301);
+    return Response.redirect("https://" + MY_DOMAIN + "/" + pageId, 307);
   } else {
     response = await fetch(url.toString(), {
       body: request.body,
       headers: request.headers,
-      method: request.method
+      method: request.method,
     });
+
+    let contentTypeOfResponse = response.clone().headers.get("content-type");
+    // checks if it is a html page or not
+    if (contentTypeOfResponse.includes("text/html")) {
+      let pageId = url.pathname.trim().replace(/\/+$/,'').slice(-32);
+      let blockId = `${pageId.slice(0, 8)}-${pageId.slice(
+        8,
+        12
+      )}-${pageId.slice(12, 16)}-${pageId.slice(16, 20)}-${pageId.slice(
+        20,
+        32
+      )}`;
+      let PublicPageDataResponse = await fetch(
+        `https://www.notion.so/api/v3/getPublicPageData`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "user-agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.66 Safari/537.36",
+          },
+          body: `{"type":"block-space","name":"page","blockId":"${blockId}","showMoveTo":false,"saveParent":false}`,
+        }
+      );
+      let PublicPageData = await PublicPageDataResponse.json();
+
+      if (PublicPageData.spaceName && PublicPageData.spaceName != MY_SPACENAME) {
+        return Response.redirect("https://" + MY_DOMAIN + "/", 301);
+      }
+    }
+
     response = new Response(response.body, response);
     response.headers.delete("Content-Security-Policy");
     response.headers.delete("X-Content-Security-Policy");
@@ -174,27 +246,30 @@ class HeadRewriter {
   element(element) {
     if (GOOGLE_FONT !== "") {
       element.append(
-        `<link href='https://fonts.googleapis.com/css?family=${GOOGLE_FONT.replace(' ', '+')}:Regular,Bold,Italic&display=swap' rel='stylesheet'>
-        <style>* { font-family: "${GOOGLE_FONT}" !important; }</style>`,
+        `<link href="https://fonts.googleapis.com/css?family=${GOOGLE_FONT.replace(
+          " ",
+          "+"
+        )}:Regular,Bold,Italic&display=swap" rel="stylesheet">
+      <style>* { font-family: "${GOOGLE_FONT}" !important; }</style>`,
         {
-          html: true
+          html: true,
         }
       );
     }
     element.append(
       `<style>
-      div.notion-topbar > div > div:nth-child(3) { display: none !important; }
-      div.notion-topbar > div > div:nth-child(4) { display: none !important; }
-      div.notion-topbar > div > div:nth-child(5) { display: none !important; }
-      div.notion-topbar > div > div:nth-child(6) { display: none !important; }
-      div.notion-topbar-mobile > div:nth-child(3) { display: none !important; }
-      div.notion-topbar-mobile > div:nth-child(4) { display: none !important; }
-      div.notion-topbar-mobile > div:nth-child(5) { display: none !important; }
-      div.notion-topbar > div > div:nth-child(1n).toggle-mode { display: block !important; }
-      div.notion-topbar-mobile > div:nth-child(1n).toggle-mode { display: block !important; }
-      </style>`,
+    div.notion-topbar > div > div:nth-child(3) { display: none !important; }
+    div.notion-topbar > div > div:nth-child(4) { display: none !important; }
+    div.notion-topbar > div > div:nth-child(5) { display: none !important; }
+    div.notion-topbar > div > div:nth-child(6) { display: none !important; }
+    div.notion-topbar-mobile > div:nth-child(3) { display: none !important; }
+    div.notion-topbar-mobile > div:nth-child(4) { display: none !important; }
+    div.notion-topbar-mobile > div:nth-child(5) { display: none !important; }
+    div.notion-topbar > div > div:nth-child(1n).toggle-mode { display: block !important; }
+    div.notion-topbar-mobile > div:nth-child(1n).toggle-mode { display: block !important; }
+    </style>`,
       {
-        html: true
+        html: true,
       }
     );
   }
@@ -207,113 +282,113 @@ class BodyRewriter {
   element(element) {
     element.append(
       `<script>
-      const SLUG_TO_PAGE = ${JSON.stringify(this.SLUG_TO_PAGE)};
-      const PAGE_TO_SLUG = {};
-      const slugs = [];
-      const pages = [];
-      const el = document.createElement('div');
-      let redirected = false;
-      Object.keys(SLUG_TO_PAGE).forEach(slug => {
-        const page = SLUG_TO_PAGE[slug];
-        slugs.push(slug);
-        pages.push(page);
-        PAGE_TO_SLUG[page] = slug;
-      });
-      function getPage() {
-        return location.pathname.slice(-32);
+    const SLUG_TO_PAGE = ${JSON.stringify(this.SLUG_TO_PAGE)};
+    const PAGE_TO_SLUG = {};
+    const slugs = [];
+    const pages = [];
+    const el = document.createElement('div');
+    let redirected = false;
+    Object.keys(SLUG_TO_PAGE).forEach(slug => {
+      const page = SLUG_TO_PAGE[slug];
+      slugs.push(slug);
+      pages.push(page);
+      PAGE_TO_SLUG[page] = slug;
+    });
+    function getPage() {
+      return location.pathname.slice(-32);
+    }
+    function getSlug() {
+      return location.pathname.slice(1);
+    }
+    function updateSlug() {
+      const slug = PAGE_TO_SLUG[getPage()];
+      if (slug != null) {
+        history.replaceState(history.state, '', '/' + slug);
       }
-      function getSlug() {
-        return location.pathname.slice(1);
+    }
+    function onDark() {
+      el.innerHTML = '<div title="Change to Light Mode" style="margin-left: auto; margin-right: 14px; min-width: 0px;"><div role="button" tabindex="0" style="user-select: none; transition: background 120ms ease-in 0s; cursor: pointer; border-radius: 44px;"><div style="display: flex; flex-shrink: 0; height: 14px; width: 26px; border-radius: 44px; padding: 2px; box-sizing: content-box; background: rgb(46, 170, 220); transition: background 200ms ease 0s, box-shadow 200ms ease 0s;"><div style="width: 14px; height: 14px; border-radius: 44px; background: white; transition: transform 200ms ease-out 0s, background 200ms ease-out 0s; transform: translateX(12px) translateY(0px);"></div></div></div></div>';
+      document.body.classList.add('dark');
+      __console.environment.ThemeStore.setState({ mode: 'dark' });
+    };
+    function onLight() {
+      el.innerHTML = '<div title="Change to Dark Mode" style="margin-left: auto; margin-right: 14px; min-width: 0px;"><div role="button" tabindex="0" style="user-select: none; transition: background 120ms ease-in 0s; cursor: pointer; border-radius: 44px;"><div style="display: flex; flex-shrink: 0; height: 14px; width: 26px; border-radius: 44px; padding: 2px; box-sizing: content-box; background: rgba(135, 131, 120, 0.3); transition: background 200ms ease 0s, box-shadow 200ms ease 0s;"><div style="width: 14px; height: 14px; border-radius: 44px; background: white; transition: transform 200ms ease-out 0s, background 200ms ease-out 0s; transform: translateX(0px) translateY(0px);"></div></div></div></div>';
+      document.body.classList.remove('dark');
+      __console.environment.ThemeStore.setState({ mode: 'light' });
+    }
+    function toggle() {
+      if (document.body.classList.contains('dark')) {
+        onLight();
+      } else {
+        onDark();
       }
-      function updateSlug() {
-        const slug = PAGE_TO_SLUG[getPage()];
-        if (slug != null) {
-          history.replaceState(history.state, '', '/' + slug);
-        }
-      }
-      function onDark() {
-        el.innerHTML = '<div title="Change to Light Mode" style="margin-left: auto; margin-right: 14px; min-width: 0px;"><div role="button" tabindex="0" style="user-select: none; transition: background 120ms ease-in 0s; cursor: pointer; border-radius: 44px;"><div style="display: flex; flex-shrink: 0; height: 14px; width: 26px; border-radius: 44px; padding: 2px; box-sizing: content-box; background: rgb(46, 170, 220); transition: background 200ms ease 0s, box-shadow 200ms ease 0s;"><div style="width: 14px; height: 14px; border-radius: 44px; background: white; transition: transform 200ms ease-out 0s, background 200ms ease-out 0s; transform: translateX(12px) translateY(0px);"></div></div></div></div>';
-        document.body.classList.add('dark');
-        __console.environment.ThemeStore.setState({ mode: 'dark' });
-      };
-      function onLight() {
-        el.innerHTML = '<div title="Change to Dark Mode" style="margin-left: auto; margin-right: 14px; min-width: 0px;"><div role="button" tabindex="0" style="user-select: none; transition: background 120ms ease-in 0s; cursor: pointer; border-radius: 44px;"><div style="display: flex; flex-shrink: 0; height: 14px; width: 26px; border-radius: 44px; padding: 2px; box-sizing: content-box; background: rgba(135, 131, 120, 0.3); transition: background 200ms ease 0s, box-shadow 200ms ease 0s;"><div style="width: 14px; height: 14px; border-radius: 44px; background: white; transition: transform 200ms ease-out 0s, background 200ms ease-out 0s; transform: translateX(0px) translateY(0px);"></div></div></div></div>';
-        document.body.classList.remove('dark');
-        __console.environment.ThemeStore.setState({ mode: 'light' });
-      }
-      function toggle() {
-        if (document.body.classList.contains('dark')) {
-          onLight();
-        } else {
+    }
+    function addDarkModeButton(device) {
+      const nav = device === 'web' ? document.querySelector('.notion-topbar').firstChild : document.querySelector('.notion-topbar-mobile');
+      el.className = 'toggle-mode';
+      el.addEventListener('click', toggle);
+      nav.appendChild(el);
+
+      // enable smart dark mode based on user-preference
+      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
           onDark();
-        }
-      }
-      function addDarkModeButton(device) {
-        const nav = device === 'web' ? document.querySelector('.notion-topbar').firstChild : document.querySelector('.notion-topbar-mobile');
-        el.className = 'toggle-mode';
-        el.addEventListener('click', toggle);
-        nav.appendChild(el);
+      } else {
+      onLight();
+    }
 
-        // enable smart dark mode based on user-preference
-        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-            onDark();
-        } else {
-            onLight();
-        }
-
-        // try to detect if user-preference change
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
-            toggle();
-        });
-      }
-      const observer = new MutationObserver(function() {
-        if (redirected) return;
-        const nav = document.querySelector('.notion-topbar');
-        const mobileNav = document.querySelector('.notion-topbar-mobile>div.notranslate');
-        if (nav && nav.firstChild && nav.firstChild.firstChild
-          || mobileNav && mobileNav.firstChild) {
-          redirected = true;
-          updateSlug();
-          addDarkModeButton(nav ? 'web' : 'mobile');
-          const onpopstate = window.onpopstate;
-          window.onpopstate = function() {
-            if (slugs.includes(getSlug())) {
-              const page = SLUG_TO_PAGE[getSlug()];
-              if (page) {
-                history.replaceState(history.state, 'bypass', '/' + page);
-              }
+    // try to detect if user-preference change
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+        toggle();
+    });
+  }
+    const observer = new MutationObserver(function() {
+      if (redirected) return;
+      const nav = document.querySelector('.notion-topbar');
+      const mobileNav = document.querySelector('.notion-topbar-mobile>div.notranslate');
+      if (nav && nav.firstChild && nav.firstChild.firstChild
+        || mobileNav && mobileNav.firstChild) {
+        redirected = true;
+        updateSlug();
+        addDarkModeButton(nav ? 'web' : 'mobile');
+        const onpopstate = window.onpopstate;
+        window.onpopstate = function() {
+          if (slugs.includes(getSlug())) {
+            const page = SLUG_TO_PAGE[getSlug()];
+            if (page) {
+              history.replaceState(history.state, 'bypass', '/' + page);
             }
-            onpopstate.apply(this, [].slice.call(arguments));
-            updateSlug();
-          };
-        }
-      });
-      observer.observe(document.querySelector('#notion-app'), {
-        childList: true,
-        subtree: true,
-      });
-      const replaceState = window.history.replaceState;
-      window.history.replaceState = function(state) {
-        if (arguments[1] !== 'bypass' && slugs.includes(getSlug())) return;
-        return replaceState.apply(window.history, arguments);
-      };
-      const pushState = window.history.pushState;
-      window.history.pushState = function(state) {
-        const dest = new URL(location.protocol + location.host + arguments[2]);
-        const id = dest.pathname.slice(-32);
-        if (pages.includes(id)) {
-          arguments[2] = '/' + PAGE_TO_SLUG[id];
-        }
-        return pushState.apply(window.history, arguments);
-      };
-      const open = window.XMLHttpRequest.prototype.open;
-      window.XMLHttpRequest.prototype.open = function() {
-        arguments[1] = arguments[1].replace('${MY_DOMAIN}', 'www.notion.so');
-        return open.apply(this, [].slice.call(arguments));
-      };
-    </script>${CUSTOM_SCRIPT}`,
+          }
+          onpopstate.apply(this, [].slice.call(arguments));
+          updateSlug();
+        };
+      }
+    });
+    observer.observe(document.querySelector('#notion-app'), {
+      childList: true,
+      subtree: true,
+    });
+    const replaceState = window.history.replaceState;
+    window.history.replaceState = function(state) {
+      if (arguments[1] !== 'bypass' && slugs.includes(getSlug())) return;
+      return replaceState.apply(window.history, arguments);
+    };
+    const pushState = window.history.pushState;
+    window.history.pushState = function(state) {
+      const dest = new URL(location.protocol + location.host + arguments[2]);
+      const id = dest.pathname.slice(-32);
+      if (pages.includes(id)) {
+        arguments[2] = '/' + PAGE_TO_SLUG[id];
+      }
+      return pushState.apply(window.history, arguments);
+    };
+    const open = window.XMLHttpRequest.prototype.open;
+    window.XMLHttpRequest.prototype.open = function() {
+      arguments[1] = arguments[1].replace('${MY_DOMAIN}', 'www.notion.so');
+      return open.apply(this, [].slice.call(arguments));
+    };
+  </script>${CUSTOM_SCRIPT}`,
       {
-        html: true
+        html: true,
       }
     );
   }
